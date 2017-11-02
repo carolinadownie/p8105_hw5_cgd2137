@@ -62,7 +62,82 @@ nyc_subway_ends_St<-nyc_subway_contains_st %>%
   cbind(., nyc_subway_contains_st) %>%
   filter(end == str_length(station_name))
 
-length(unique(nyc_subway_ends_St$station_name))
 ```
 
 There are `r length(unique(nyc_subway_ends_St$station_name))` subway stations with names ending in "St". 
+
+#Problem 2:
+I’m curious about how many people watched each episode of “Game of Thrones” over the past 7 seasons. Find these data online and import them into R using functions in rvest. Taking the time to find data that’s pretty close to the format you want is worth a bit of effort; wikipedia is a good place to start.
+
+
+
+```{r wikipedia chart}
+url<- "https://en.wikipedia.org/wiki/Game_of_Thrones#cite_note-S3ratings-277"
+
+rating_xml <- (read_html(url) %>% html_nodes(css = "table"))[[4]] %>% html_table(header = TRUE)
+
+ratings <- ratings_html %>%
+  html_nodes("") %>%
+  html_text() %>% 
+
+
+html_nodes("td , th")
+```
+
+
+```{r season 1}
+url <- "http://tvbythenumbers.zap2it.com/1/game-of-thrones-ratings-season-one/"
+
+season_one_xml <- (read_html(url) %>% html_nodes(css = "table"))[[1]] %>% html_table(header = TRUE)
+
+episode_id<- c("S1_E01", "S1_E02", "S1_E03", "S1_E04", "S1_E05", "S1_E06", "S1_E07", "S1_E08", "S1_E09", "S1_E10")
+
+season_one<-cbind(season_one_xml, episode_id) %>% mutate(season = "1", episode = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")) %>%
+  select(episode_id, season, episode, Viewers)
+
+```
+
+```{r season 2}
+url<- "https://tvseriesfinale.com/tv-show/game-of-thrones-season-two-ratings-22729/"
+
+season_two_html <- read_html(url)
+
+season_two <- season_two_html %>%
+  html_nodes("p:nth-child(15) , .entry-content :nth-child(14), .entry-content :nth-child(12), .entry-content :nth-child(11), .entry-content :nth-child(10), .entry-content :nth-child(9), .entry-content :nth-child(8), .entry-content :nth-child(7), .entry-content :nth-child(6), p:nth-child(5)") %>% 
+  html_text() %>% data_frame()
+
+```
+
+
+```{r season 4}
+url <- "https://docs.google.com/spreadsheets/d/1QU8U82xgr8GURmJc3eR0Y4w7ppxwfNsp6dhPnzcs4bw/pubhtml/sheet?headers=false&gid=8&range=A1%3AG19&output=html&rm=minimal"
+
+season_four_xml <- (read_html(url) %>% html_nodes(css = "table"))[[1]] %>% html_table(header = TRUE)
+
+```
+
+```{r season 5}
+url <- "https://docs.google.com/spreadsheets/d/1QU8U82xgr8GURmJc3eR0Y4w7ppxwfNsp6dhPnzcs4bw/pubhtml/sheet?headers=false&gid=24&range=A1%3AG19&output=html&rm=minimal"
+
+season_five_xml<-(read_html(url) %>% html_nodes(css = "table"))[[1]] %>% html_table(header = TRUE)
+```
+
+
+```{r season 6}
+url <- "https://docs.google.com/spreadsheets/d/1QU8U82xgr8GURmJc3eR0Y4w7ppxwfNsp6dhPnzcs4bw/pubhtml/sheet?headers=false&gid=1897419846&range=A1%3AG19&output=html&rm=minimal"
+
+season_six_xml<-(read_html(url) %>% html_nodes(css = "table"))[[1]] %>% html_table(header = TRUE)
+
+```
+
+
+
+
+
+After you’ve found and read the data, make sure they’re tidy. In your final dataset, include variables for season, episode, and viewers; also create a unique episode ID of the form SX_EYY where X and Y are season or episode numbers.
+
+Make a plot that shows the number of viewers for each episode of each season.
+
+Make a boxplot of the number of viewers for each episode of each season.
+
+Fit a linear model that treats number of viewers in each episode as a response and season as a categorical predictor; make season 4 the reference season. Present and discuss the results of your modeling.

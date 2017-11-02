@@ -12,9 +12,9 @@
     "path" : null,
     "project_path" : null,
     "properties" : {
-        "cacheKey" : "9C781722",
+        "cacheKey" : "77136BC8",
         "caption" : "nyc_subway",
-        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=nyc_subway&cache_key=9C781722",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=nyc_subway&cache_key=77136BC8",
         "displayedObservations" : "1868",
         "environment" : "",
         "object" : "nyc_subway",
