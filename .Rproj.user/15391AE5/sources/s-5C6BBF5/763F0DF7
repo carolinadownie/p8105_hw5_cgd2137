@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1509583694866.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "763F0DF7",
+    "lastKnownWriteTime" : 4323191968,
+    "last_content_update" : 1509583694866,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "9C781722",
+        "caption" : "nyc_subway",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=nyc_subway&cache_key=9C781722",
+        "displayedObservations" : "1868",
+        "environment" : "",
+        "object" : "nyc_subway",
+        "preview" : "0",
+        "totalObservations" : "1868",
+        "variables" : "6"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
