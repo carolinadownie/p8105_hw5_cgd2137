@@ -10,6 +10,11 @@ library(tidyverse)
 library(rvest)
 library(httr)
 library(forcats)
+library(stringr)
+library(janitor)
+library(haven)
+library(stringr)
+library(forcats)
 ```
 
 #Problem 1: 
@@ -39,5 +44,25 @@ nyc_subway %>% group_by(station_name) %>%
 
 ```
 
-
 Overall (not only in stations that have more than 10 entrances), how many subway station names contain the abbreviation “St”? How many end with “St”?
+
+```{r subway stations containing St}
+
+nyc_subway_contains_st<-nyc_subway %>% filter(str_detect(station_name, "St")) 
+  
+```
+
+There are `r length(unique(nyc_subway_contains_st$station_name))` subway stations containing "St" in their name. 
+
+```{r subway statins ending in St}
+nyc_subway_ends_St<-nyc_subway_contains_st %>% 
+  pull(station_name) %>% 
+  str_locate(., "St") %>% 
+  data.frame() %>% 
+  cbind(., nyc_subway_contains_st) %>%
+  filter(end == str_length(station_name))
+
+length(unique(nyc_subway_ends_St$station_name))
+```
+
+There are `r length(unique(nyc_subway_ends_St$station_name))` subway stations with names ending in "St". 
