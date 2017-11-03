@@ -71,70 +71,42 @@ I’m curious about how many people watched each episode of “Game of Thrones�
 
 
 
-```{r wikipedia chart}
+```{r loading wikipedia chart}
 url<- "https://en.wikipedia.org/wiki/Game_of_Thrones#cite_note-S3ratings-277"
 
-rating_xml <- (read_html(url) %>% html_nodes(css = "table"))[[4]] %>% html_table(header = TRUE)
-
-ratings <- ratings_html %>%
-  html_nodes("") %>%
-  html_text() %>% 
-
-
-html_nodes("td , th")
-```
-
-
-```{r season 1}
-url <- "http://tvbythenumbers.zap2it.com/1/game-of-thrones-ratings-season-one/"
-
-season_one_xml <- (read_html(url) %>% html_nodes(css = "table"))[[1]] %>% html_table(header = TRUE)
-
-episode_id<- c("S1_E01", "S1_E02", "S1_E03", "S1_E04", "S1_E05", "S1_E06", "S1_E07", "S1_E08", "S1_E09", "S1_E10")
-
-season_one<-cbind(season_one_xml, episode_id) %>% mutate(season = "1", episode = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")) %>%
-  select(episode_id, season, episode, Viewers)
+ratings_xml <- (read_html(url) %>% html_nodes(css = "table"))[[4]] %>% html_table(header = TRUE) %>% data.frame()
 
 ```
-
-```{r season 2}
-url<- "https://tvseriesfinale.com/tv-show/game-of-thrones-season-two-ratings-22729/"
-
-season_two_html <- read_html(url)
-
-season_two <- season_two_html %>%
-  html_nodes("p:nth-child(15) , .entry-content :nth-child(14), .entry-content :nth-child(12), .entry-content :nth-child(11), .entry-content :nth-child(10), .entry-content :nth-child(9), .entry-content :nth-child(8), .entry-content :nth-child(7), .entry-content :nth-child(6), p:nth-child(5)") %>% 
-  html_text() %>% data_frame()
-
-```
-
-
-```{r season 4}
-url <- "https://docs.google.com/spreadsheets/d/1QU8U82xgr8GURmJc3eR0Y4w7ppxwfNsp6dhPnzcs4bw/pubhtml/sheet?headers=false&gid=8&range=A1%3AG19&output=html&rm=minimal"
-
-season_four_xml <- (read_html(url) %>% html_nodes(css = "table"))[[1]] %>% html_table(header = TRUE)
-
-```
-
-```{r season 5}
-url <- "https://docs.google.com/spreadsheets/d/1QU8U82xgr8GURmJc3eR0Y4w7ppxwfNsp6dhPnzcs4bw/pubhtml/sheet?headers=false&gid=24&range=A1%3AG19&output=html&rm=minimal"
-
-season_five_xml<-(read_html(url) %>% html_nodes(css = "table"))[[1]] %>% html_table(header = TRUE)
-```
-
-
-```{r season 6}
-url <- "https://docs.google.com/spreadsheets/d/1QU8U82xgr8GURmJc3eR0Y4w7ppxwfNsp6dhPnzcs4bw/pubhtml/sheet?headers=false&gid=1897419846&range=A1%3AG19&output=html&rm=minimal"
-
-season_six_xml<-(read_html(url) %>% html_nodes(css = "table"))[[1]] %>% html_table(header = TRUE)
-
-```
-
-
-
-
 
 After you’ve found and read the data, make sure they’re tidy. In your final dataset, include variables for season, episode, and viewers; also create a unique episode ID of the form SX_EYY where X and Y are season or episode numbers.
+
+```{r tidying GoT chart}
+
+GoT_ratings <- ratings_xml %>% select(-c(Average, Season)) %>% 
+  rename(Season = Season.1) %>%
+  gather(key = Episode, value = Num_viewers, Ep..1: Ep..10) %>%
+  separate(Episode, c("remove", "Episode"), "\\..") %>% 
+  select(-remove) %>%
+  filter(Num_viewers != "N/A") %>%
+  mutate(episode_id = paste("S",substr(Season, 1,1), "_","E",substr(Episode, 1, 2))) 
+
+
+
+df1 <- df %>%
+          group_by(an) %>%
+          mutate(ap=paste0(substr(at, 1, 1), an, str_pad(row_number(), 3, pad="0")))
+
+
+stringr::str_interp(
+  "Hi ${v1}, Have a very nice ${v2} !",
+  list("v1" = "Tom", "v2" = "day"))
+#[1] "Hi Tom, Have a very nice day !"
+
+
+```
+
+
+
 
 Make a plot that shows the number of viewers for each episode of each season.
 
