@@ -15,6 +15,12 @@ library(janitor)
 library(haven)
 library(stringr)
 library(forcats)
+library(ggplot2)
+
+knitr::opts_chunk$set(
+  fig.width = 11,
+  fig.asp = .6,
+  out.width = "90%")
 ```
 
 #Problem 1: 
@@ -88,28 +94,54 @@ GoT_ratings <- ratings_xml %>% select(-c(Average, Season)) %>%
   separate(Episode, c("remove", "Episode"), "\\..") %>% 
   select(-remove) %>%
   filter(Num_viewers != "N/A") %>%
-  mutate(episode_id = paste("S",substr(Season, 1,1), "_","E",substr(Episode, 1, 2))) 
+  mutate(episode_id = paste("S",substr(Season, 1,1), "_","E",substr(Episode, 1, 2)), Num_viewers = as.numeric(Num_viewers)) 
+
+```
+
+Make a plot that shows the number of viewers for each episode of each season.
+
+```{r number of viewers for each episode of each season}
+GoT_ratings %>% 
+  mutate(episode_id = fct_reorder(episode_id, Num_viewers)) %>%
+  ggplot(aes(x = episode_id, y = Num_viewers)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of viewers for each Game of Thrones episode",
+    x = "Episode_id",
+    y = "Number of viewers (millions)") + 
+  theme(legend.position = "bottom") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+#Is this the best way to order the graph??
+```
 
 
+Make a boxplot of the number of viewers for each episode of each season.
+```{r boxplot of number of viewers}
+GoT_ratings %>%
+  mutate(Episode = fct_reorder(Episode, Num_viewers)) %>%
+  ggplot(aes(x = Episode, y = Num_viewers)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribution of number of viewers for each Game of Thrones episode across seasons",
+    x = "Episode",
+    y = "Number of viewers (millions)") + 
+  theme(legend.position = "bottom") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-df1 <- df %>%
-          group_by(an) %>%
-          mutate(ap=paste0(substr(at, 1, 1), an, str_pad(row_number(), 3, pad="0")))
-
-
-stringr::str_interp(
-  "Hi ${v1}, Have a very nice ${v2} !",
-  list("v1" = "Tom", "v2" = "day"))
-#[1] "Hi Tom, Have a very nice day !"
 
 
 ```
 
 
-
-
-Make a plot that shows the number of viewers for each episode of each season.
-
-Make a boxplot of the number of viewers for each episode of each season.
-
 Fit a linear model that treats number of viewers in each episode as a response and season as a categorical predictor; make season 4 the reference season. Present and discuss the results of your modeling.
+
+```{r linear model}
+GoT_ratings %>% 
+  mutate(Season = as.factor(Season), Season = fct_relevel(Season, "4")) %>%
+  lm(Num_viewers ~ Season, data = .) %>%
+  broom::tidy() %>% 
+  select(-std.error, -statistic) %>% 
+  knitr::kable(digits = 3)
+```
+
+
+This linear model suggests that for seasons 1, 2, and 3, season had a negative relationship with number of viewers, whereas for seasons 5, 6, and 7, season had a positive relationship with number of viewers (when season 4 was used as the reference group). Season 7 has the largest estimated intercept. 
