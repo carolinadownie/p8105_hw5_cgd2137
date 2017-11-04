@@ -17,6 +17,7 @@ library(stringr)
 library(forcats)
 library(ggplot2)
 library(tidytext)
+library(viridis)
 
 knitr::opts_chunk$set(
   fig.width = 11,
@@ -180,7 +181,12 @@ dynamite_reviews <- map(urls, ~read_page_reviews(.x)) %>%
 
 Inspect and describe the resulting dataset. What variables are included? Has the scraping been successful?
 
-The dataset created by this procedure contains 3 variables: title, stars, and text. Title stores the initial text that accompanies the star rating, stars stores information about how many stars the reviewer gave, and text stores the additional comments found below the star rating on the Amazon website. Therefore, overall, it seems that the scraping was successful. 
+The dataset created by this procedure contains 3 variables: title, stars, and text. Title stores the initial text that accompanies the star rating, stars stores information about how many stars the reviewer gave, and text stores the additional comments found below the star rating on the Amazon website. However, the titles are non-unique; for example, multiple reviewers titled their reviews "Five Stars". This will likely cause issues when we try to analyze the dataset, so another variable with the unique review number should be added:
+
+```{r}
+dynamite_reviews <- dynamite_reviews %>% mutate(review_num = c(1:1000)) %>% select(review_num, title, stars, text)
+
+```
 
 
 Create a tidy text dataset from the above using the text in the reviews. Use words as the token and remove stop words.
@@ -241,34 +247,42 @@ Conduct a sentiment analysis of the review texts; make a plot of your results an
 ```{r sentiment analysis}
 bing_sentiments <- get_sentiments("bing")
 
-
 #Need to add review number because not all titles are unique. 
 ratings_sentiments <- ratings_tidy_text %>% 
   inner_join(., bing_sentiments) %>% 
-  count(title, sentiment) %>% 
+  count(review_num, sentiment) %>% 
   spread(sentiment, n, fill = 0) %>% 
   mutate(sentiment = positive - negative) %>% 
-  select(title, sentiment)
+  select(review_num, sentiment)
 
-ratings_sentiments <- right_join(dynamite_reviews, ratings_sentiments, by = "title")
-
-library(viridis)
+ratings_sentiments <- right_join(dynamite_reviews, ratings_sentiments, by = "review_num")
 
 ratings_sentiments %>% 
-  mutate(title = factor(title),
-    title = fct_reorder(title, sentiment), 
-    stars = as.character(stars)) %>% 
-  ggplot(aes(x = title, 
+  mutate(review_num = factor(review_num),
+    review_num = fct_reorder(review_num, sentiment), 
+    stars = as.factor(stars)) %>% 
+  ggplot(aes(x = review_num, 
              y = sentiment, fill = stars, color = stars)) + 
   geom_bar(stat = "identity") + 
   theme(axis.title.x = element_blank(),
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) +
   scale_fill_viridis(discrete = TRUE) + 
-  scale_color_viridis(discrete = TRUE) 
+  scale_color_viridis(discrete = TRUE) +
+  labs(
+    title = "Sentiment analysis of the review texts, by number of stars"
+  )
 
-
-test<-ratings_sentiments %>% filter(sentiment == max(sentiment))
-##WHY IS THE SCALE SO OFF??
 ```
 
+```{r most positive and negative reviews}
+most_positive_review <- ratings_sentiments %>% filter(sentiment == max(sentiment))
+
+most_neg_review <- ratings_sentiments %>% filter(sentiment == min(sentiment))
+
+```
+
+
+The most positive review was review number `r most_positive_review$review_num`, with a sentiment score of `r most_positive_review$sentiment`. 
+
+The most negative review was review number `r most_neg_review$review_num`, with a sentiment score of `r most_neg_review$sentiment`. 
