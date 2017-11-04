@@ -16,6 +16,7 @@ library(haven)
 library(stringr)
 library(forcats)
 library(ggplot2)
+library(tidytext)
 
 knitr::opts_chunk$set(
   fig.width = 11,
@@ -40,7 +41,7 @@ nyc_subway %>% group_by(station_name) %>%
   mutate(num_entrances = n()) %>%
   filter(num_entrances > 10) %>%
   ggplot(aes(x = fct_reorder(station_name, num_entrances), y = num_entrances)) + 
-    geom_point() + labs(
+    geom_bar(stat = "identity") + labs(
     title = "Number of entrances for each subway station",
     x = "Subway station",
     y = "Number of entrances") +
@@ -145,3 +146,96 @@ GoT_ratings %>%
 
 
 This linear model suggests that for seasons 1, 2, and 3, season had a negative relationship with number of viewers, whereas for seasons 5, 6, and 7, season had a positive relationship with number of viewers (when season 4 was used as the reference group). Season 7 has the largest estimated intercept. 
+
+
+#Problem 3:
+```{r scraping Amazon Napolean Dynamite reviews}
+read_page_reviews <- function(url) {
+  
+  h <- read_html(url)
+  
+  title <- h %>%
+    html_nodes("#cm_cr-review_list .review-title") %>%
+    html_text()
+  
+  stars <- h %>%
+    html_nodes("#cm_cr-review_list .review-rating") %>%
+    html_text() %>%
+    str_extract("\\d") %>%
+    as.numeric()
+  
+  text = h %>%
+    html_nodes(".review-data:nth-child(4)") %>%
+    html_text()
+  
+  data_frame(title, stars, text)
+}
+
+url_base <- "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber="
+urls <- paste0(url_base, 1:100)
+
+dynamite_reviews <- map(urls, ~read_page_reviews(.x)) %>% 
+  bind_rows
+```
+
+Inspect and describe the resulting dataset. What variables are included? Has the scraping been successful?
+
+The dataset created by this procedure contains 3 variables: title, stars, and text. Title stores the initial text that accompanies the star rating, stars stores information about how many stars the reviewer gave, and text stores the additional comments found below the star rating on the Amazon website. Therefore, overall, it seems that the scraping was successful. 
+
+
+Create a tidy text dataset from the above using the text in the reviews. Use words as the token and remove stop words.
+
+```{r creating tidy text dataset}
+ratings_tidy_text<- dynamite_reviews %>% unnest_tokens(word, text)
+
+data(stop_words)
+
+ratings_tidy_text <- anti_join(ratings_tidy_text, stop_words)
+
+```
+
+
+What words are most frequently used in five-star reviews? In 1-star reviews?
+
+Make a plot that shows the (approximate) log odds ratio for word appearance comparing 1-star reviews to 5-star reviews; include the 10 words with the most extreme log ORs in both directions.
+
+```{r plotting word frequency in 5-star vs 1-star reviews}
+#Calculating log odds ratio
+ratings_word_ratios <- ratings_tidy_text %>% 
+  mutate(stars = as.character(stars)) %>%
+  filter(stars %in% c("1", "5")) %>% 
+  count(word, stars) %>%
+  group_by(word) %>% 
+  filter(sum(n) >= 5) %>%
+  ungroup() %>%
+  spread(stars, n, fill = 0) %>%
+  rename(One = "1", Five = "5") %>%
+  mutate(
+   One_odds = (One + 1) / (sum(One) + 1),
+    Five_odds = (Five + 1) / (sum(Five) + 1),
+    log_OR = log(One_odds / Five_odds)
+  ) %>%
+  arrange(desc(log_OR)) 
+
+#Plotting the 10 words with the most extreme log odds 
+ratings_word_ratios %>%
+  mutate(pos_log_OR = ifelse(log_OR > 0, "One > Five", "Five > One")) %>% 
+  group_by(pos_log_OR) %>%
+  top_n(10, abs(log_OR)) %>%
+  ungroup() %>%
+  mutate(word = fct_reorder(word, log_OR)) %>%
+  ggplot(aes(word, log_OR, fill = pos_log_OR)) +
+  geom_col() +
+  coord_flip() +
+  ylab("log odds ratio (One/Five)") +
+  scale_fill_discrete(name = "") +
+  labs(
+    title = "Plot of 10 words with more extreme log odds comparing 1-star to 5-star reviews"
+  )
+
+```
+
+
+
+Conduct a sentiment analysis of the review texts; make a plot of your results and include the star rating in your graphic. What is the most positive review? The most negative review?
+
