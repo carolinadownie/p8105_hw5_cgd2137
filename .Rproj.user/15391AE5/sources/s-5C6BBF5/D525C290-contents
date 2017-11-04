@@ -236,6 +236,39 @@ ratings_word_ratios %>%
 ```
 
 
-
 Conduct a sentiment analysis of the review texts; make a plot of your results and include the star rating in your graphic. What is the most positive review? The most negative review?
+
+```{r sentiment analysis}
+bing_sentiments <- get_sentiments("bing")
+
+
+#Need to add review number because not all titles are unique. 
+ratings_sentiments <- ratings_tidy_text %>% 
+  inner_join(., bing_sentiments) %>% 
+  count(title, sentiment) %>% 
+  spread(sentiment, n, fill = 0) %>% 
+  mutate(sentiment = positive - negative) %>% 
+  select(title, sentiment)
+
+ratings_sentiments <- right_join(dynamite_reviews, ratings_sentiments, by = "title")
+
+library(viridis)
+
+ratings_sentiments %>% 
+  mutate(title = factor(title),
+    title = fct_reorder(title, sentiment), 
+    stars = as.character(stars)) %>% 
+  ggplot(aes(x = title, 
+             y = sentiment, fill = stars, color = stars)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  scale_fill_viridis(discrete = TRUE) + 
+  scale_color_viridis(discrete = TRUE) 
+
+
+test<-ratings_sentiments %>% filter(sentiment == max(sentiment))
+##WHY IS THE SCALE SO OFF??
+```
 
