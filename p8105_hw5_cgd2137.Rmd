@@ -198,7 +198,7 @@ Inspect and describe the resulting dataset. What variables are included? Has the
 The dataset created by this procedure contains 3 variables: title, stars, and text. Title stores the initial text that accompanies the star rating, stars stores information about how many stars the reviewer gave, and text stores the additional comments found below the star rating on the Amazon website. However, the titles are non-unique; for example, multiple reviewers titled their reviews "Five Stars". This will likely cause issues when we try to analyze the dataset, so another variable with the unique review number should be added:
 
 ```{r}
-dynamite_reviews <- dynamite_reviews %>% mutate(review_num = c(1:1000)) %>% select(review_num, title, stars, text)
+dynamite_reviews <- dynamite_reviews %>% mutate(review_num = c(1:nrow(dynamite_reviews))) %>% select(review_num, title, stars, text)
 
 ```
 
