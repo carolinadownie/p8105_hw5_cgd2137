@@ -6,16 +6,16 @@ output: html_document
 ---
 
 ```{r loading packages}
+
+library(ggplot2)
 library(tidyverse)
 library(rvest)
 library(httr)
-library(forcats)
 library(stringr)
 library(janitor)
 library(haven)
 library(stringr)
 library(forcats)
-library(ggplot2)
 library(tidytext)
 library(viridis)
 
@@ -38,18 +38,20 @@ nyc_subway <- GET("https://data.ny.gov/resource/hvwh-qtfg.json", query = list("$
 Make a plot showing the number of entrances for each subway station. Restrict your plot to stations that have more than 10 entrances, and order stations according to the number of entrances.
 
 ```{r number of entrances for each subway station}
+#This works
 nyc_subway %>% group_by(station_name) %>%
   mutate(num_entrances = n()) %>%
   filter(num_entrances > 10) %>%
-  ggplot(aes(x = fct_reorder(station_name, num_entrances), y = num_entrances)) + 
+  select(station_name, num_entrances) %>%
+  unique(.) %>%
+  ggplot(aes(x = forcats::fct_reorder(station_name, num_entrances), y = num_entrances, group = station_name)) + 
     geom_bar(stat = "identity") + labs(
     title = "Number of entrances for each subway station",
     x = "Subway station",
     y = "Number of entrances") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
   
-  
-
+  ##This is adding up the num_entrances for each station name (34th street 41--41*41 is ~1600, which is what is being plotted on the graph)
 ```
 
 Overall (not only in stations that have more than 10 entrances), how many subway station names contain the abbreviation “St”? How many end with “St”?
@@ -57,7 +59,7 @@ Overall (not only in stations that have more than 10 entrances), how many subway
 ```{r subway stations containing St}
 
 nyc_subway_contains_st<-nyc_subway %>% filter(str_detect(station_name, "St")) 
-  
+
 ```
 
 There are `r length(unique(nyc_subway_contains_st$station_name))` subway stations containing "St" in their name. 
