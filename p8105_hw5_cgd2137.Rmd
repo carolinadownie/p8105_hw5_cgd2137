@@ -25,8 +25,7 @@ knitr::opts_chunk$set(
   out.width = "90%")
 ```
 
-#Problem 1: 
-Using the State of New York API, read the complete dataset using functions in httr. By default, the API will return only the first 1000 entries, so using the GET option query = list($limit= 2000) in your request will be useful.
+#Problem 1--Subway entrances in NYC subways: 
 
 ```{r loading and cleaning New York subway data}
 nyc_subway <- GET("https://data.ny.gov/resource/hvwh-qtfg.json", query = list("$limit" = 2000)) %>% 
@@ -38,7 +37,7 @@ nyc_subway <- GET("https://data.ny.gov/resource/hvwh-qtfg.json", query = list("$
 Make a plot showing the number of entrances for each subway station. Restrict your plot to stations that have more than 10 entrances, and order stations according to the number of entrances.
 
 ```{r number of entrances for each subway station}
-#This works
+
 nyc_subway %>% group_by(station_name) %>%
   mutate(num_entrances = n()) %>%
   filter(num_entrances > 10) %>%
@@ -50,19 +49,9 @@ nyc_subway %>% group_by(station_name) %>%
     x = "Subway station",
     y = "Number of entrances") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
-  
-  ##This doesn't work--This is adding up the num_entrances for each station name (34th street 41--41*41 is ~1600, which is what is being plotted on the graph)
-
-nyc_subway %>% group_by(station_name) %>%
-  mutate(num_entrances = n()) %>%
-  filter(num_entrances > 10) %>%
-  ggplot(aes(x = forcats::fct_reorder(station_name, num_entrances), y = num_entrances, group = station_name)) + 
-    geom_bar(stat = "identity") + labs(
-    title = "Number of entrances for each subway station",
-    x = "Subway station",
-    y = "Number of entrances") +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
 ```
+
+
 
 Overall (not only in stations that have more than 10 entrances), how many subway station names contain the abbreviation “St”? How many end with “St”?
 
@@ -73,6 +62,7 @@ nyc_subway_contains_st<-nyc_subway %>% filter(str_detect(station_name, "St"))
 ```
 
 There are `r length(unique(nyc_subway_contains_st$station_name))` subway stations containing "St" in their name. 
+
 
 ```{r subway statins ending in St}
 nyc_subway_ends_St<-nyc_subway_contains_st %>% 
@@ -86,19 +76,16 @@ nyc_subway_ends_St<-nyc_subway_contains_st %>%
 
 There are `r length(unique(nyc_subway_ends_St$station_name))` subway stations with names ending in "St". 
 
-#Problem 2:
-I’m curious about how many people watched each episode of “Game of Thrones” over the past 7 seasons. Find these data online and import them into R using functions in rvest. Taking the time to find data that’s pretty close to the format you want is worth a bit of effort; wikipedia is a good place to start.
+#Problem 2--Game of Thrones viewers:
 
-
-
-```{r loading wikipedia chart}
+```{r loading GoT wikipedia chart}
 url<- "https://en.wikipedia.org/wiki/Game_of_Thrones#cite_note-S3ratings-277"
 
 ratings_xml <- (read_html(url) %>% html_nodes(css = "table"))[[4]] %>% html_table(header = TRUE) %>% data.frame()
 
 ```
 
-After you’ve found and read the data, make sure they’re tidy. In your final dataset, include variables for season, episode, and viewers; also create a unique episode ID of the form SX_EYY where X and Y are season or episode numbers.
+Tidying dataset to include variables for season, episode, viewers, and a unique episode ID of the form SX_EYY where X and Y are season or episode numbers.
 
 ```{r tidying GoT chart}
 
@@ -112,7 +99,9 @@ GoT_ratings <- ratings_xml %>% select(-c(Average, Season)) %>%
 
 ```
 
-Make a plot that shows the number of viewers for each episode of each season.
+
+
+Making a plot that shows the number of viewers for each episode of each season.
 
 ```{r number of viewers for each episode of each season}
 GoT_ratings %>% 
@@ -125,11 +114,10 @@ GoT_ratings %>%
     y = "Number of viewers (millions)") + 
   theme(legend.position = "bottom") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-#Is this the best way to order the graph??
 ```
 
 
-Make a boxplot of the number of viewers for each episode of each season.
+Making a boxplot of the number of viewers for each episode of each season.
 ```{r boxplot of number of viewers}
 GoT_ratings %>%
   mutate(Episode = fct_reorder(Episode, Num_viewers)) %>%
@@ -146,7 +134,7 @@ GoT_ratings %>%
 ```
 
 
-Fit a linear model that treats number of viewers in each episode as a response and season as a categorical predictor; make season 4 the reference season. Present and discuss the results of your modeling.
+Fitting a linear model that treats number of viewers in each episode as a response and season as a categorical predictor (season 4 is reference)
 
 ```{r linear model}
 GoT_ratings %>% 
@@ -158,13 +146,13 @@ GoT_ratings %>%
 ```
 
 
-This linear model suggests that for seasons 1, 2, and 3, season had a negative relationship with number of viewers, whereas for seasons 5, 6, and 7, season had a positive relationship with number of viewers (when season 4 was used as the reference group). Season 7 has the largest estimated intercept. 
+This linear model suggests that for seasons 1, 2, and 3, season had a negative relationship with number of viewers, whereas for seasons 5, 6, and 7, season had a positive relationship with number of viewers (when season 4 was used as the reference group). Season 7 has the largest estimated beta value. 
 
 
-#Problem 3:
+#Problem 3--scraping Napolean Dyanmite reviews from Amazon and performing a sentiment analysis:
+
 ```{r scraping Amazon Napolean Dynamite reviews}
 
-##Why doesn't this consistently scrape 1000 reviews? 
 read_page_reviews <- function(url) {
   
   h <- read_html(url)
@@ -193,7 +181,6 @@ dynamite_reviews <- map(urls, ~read_page_reviews(.x)) %>%
   bind_rows
 ```
 
-Inspect and describe the resulting dataset. What variables are included? Has the scraping been successful?
 
 The dataset created by this procedure contains 3 variables: title, stars, and text. Title stores the initial text that accompanies the star rating, stars stores information about how many stars the reviewer gave, and text stores the additional comments found below the star rating on the Amazon website. However, the titles are non-unique; for example, multiple reviewers titled their reviews "Five Stars". This will likely cause issues when we try to analyze the dataset, so another variable with the unique review number should be added:
 
@@ -203,7 +190,7 @@ dynamite_reviews <- dynamite_reviews %>% mutate(review_num = c(1:nrow(dynamite_r
 ```
 
 
-Create a tidy text dataset from the above using the text in the reviews. Use words as the token and remove stop words.
+Creating a tidy text dataset from the above using the text in the reviews, removing stop words and using words as the token. 
 
 ```{r creating tidy text dataset}
 ratings_tidy_text<- dynamite_reviews %>% unnest_tokens(word, text)
@@ -216,8 +203,21 @@ ratings_tidy_text <- anti_join(ratings_tidy_text, stop_words)
 
 
 What words are most frequently used in five-star reviews? In 1-star reviews?
+```{r most common words used in 5-star vs 1-star reviews}
+words_5_stars<-ratings_tidy_text %>% filter(stars == "5") 
+words_5_stars<-table(words_5_stars$word) %>% data.frame() %>% arrange(desc(Freq)) %>% rename(words = Var1) %>% top_n(., 5)
 
-Make a plot that shows the (approximate) log odds ratio for word appearance comparing 1-star reviews to 5-star reviews; include the 10 words with the most extreme log ORs in both directions.
+words_1_star<-ratings_tidy_text %>% filter(stars == "1") 
+words_1_star<-table(words_1_star$word) %>% data.frame() %>% arrange(desc(Freq)) %>% rename(words = Var1) %>% top_n(., 5)
+
+
+
+```
+
+The top 5 most common words used in five-star reviews are `r words_5_stars$words`. The top 5 most common words used in one-star reviews are `r words_1_star$words` (Note: there may be more than 5 words for each of these if there is a tie in the frequency of most common words). 
+
+
+Making a plot that shows the (approximate) log odds ratio for word appearance comparing 1-star reviews to 5-star reviews, including the 10 words with the most extreme log ORs in both directions.
 
 ```{r plotting word frequency in 5-star vs 1-star reviews}
 #Calculating log odds ratio
