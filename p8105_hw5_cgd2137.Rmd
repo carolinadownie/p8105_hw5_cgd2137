@@ -51,7 +51,17 @@ nyc_subway %>% group_by(station_name) %>%
     y = "Number of entrances") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
   
-  ##This is adding up the num_entrances for each station name (34th street 41--41*41 is ~1600, which is what is being plotted on the graph)
+  ##This doesn't work--This is adding up the num_entrances for each station name (34th street 41--41*41 is ~1600, which is what is being plotted on the graph)
+
+nyc_subway %>% group_by(station_name) %>%
+  mutate(num_entrances = n()) %>%
+  filter(num_entrances > 10) %>%
+  ggplot(aes(x = forcats::fct_reorder(station_name, num_entrances), y = num_entrances, group = station_name)) + 
+    geom_bar(stat = "identity") + labs(
+    title = "Number of entrances for each subway station",
+    x = "Subway station",
+    y = "Number of entrances") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
 ```
 
 Overall (not only in stations that have more than 10 entrances), how many subway station names contain the abbreviation “St”? How many end with “St”?
@@ -153,6 +163,8 @@ This linear model suggests that for seasons 1, 2, and 3, season had a negative r
 
 #Problem 3:
 ```{r scraping Amazon Napolean Dynamite reviews}
+
+##Why doesn't this consistently scrape 1000 reviews? 
 read_page_reviews <- function(url) {
   
   h <- read_html(url)
