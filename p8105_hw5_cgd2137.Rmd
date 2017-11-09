@@ -150,34 +150,9 @@ This linear model suggests that for seasons 1, 2, and 3, season had a negative r
 
 #Problem 3--sentiment analysis of Napolean Dynamite reviews: 
 
-```{r scraping Amazon Napolean Dynamite reviews}
+```{r loading Amazon Napolean Dynamite reviews}
 
-read_page_reviews <- function(url) {
-  
-  h <- read_html(url)
-  
-  title <- h %>%
-    html_nodes("#cm_cr-review_list .review-title") %>%
-    html_text()
-  
-  stars <- h %>%
-    html_nodes("#cm_cr-review_list .review-rating") %>%
-    html_text() %>%
-    str_extract("\\d") %>%
-    as.numeric()
-  
-  text = h %>%
-    html_nodes(".review-data:nth-child(4)") %>%
-    html_text()
-  
-  data_frame(title, stars, text)
-}
-
-url_base <- "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber="
-urls <- paste0(url_base, 1:100)
-
-dynamite_reviews <- map(urls, ~read_page_reviews(.x)) %>% 
-  bind_rows
+dynamite_reviews <- read_csv("dynamite_reviews.csv")
 ```
 
 The dataset created by this procedure contains 3 variables: title, stars, and text. Title stores the initial text that accompanies the star rating, stars stores information about how many stars the reviewer gave, and text stores the additional comments found below the star rating on the Amazon website. However, the titles are non-unique; for example, multiple reviewers titled their reviews "Five Stars". This will likely cause issues when we try to analyze the dataset, so another variable with the unique review number should be added:
