@@ -34,7 +34,7 @@ nyc_subway <- GET("https://data.ny.gov/resource/hvwh-qtfg.json", query = list("$
   select(station_name, north_south_street, east_west_street, entrance_latitude, entrance_longitude, corner)
 ```
 
-Make a plot showing the number of entrances for each subway station. Restrict your plot to stations that have more than 10 entrances, and order stations according to the number of entrances.
+Making a plot showing the number of entrances for each subway station (restricted to stations that have more than 10 entrances). 
 
 ```{r number of entrances for each subway station}
 
@@ -52,8 +52,7 @@ nyc_subway %>% group_by(station_name) %>%
 ```
 
 
-
-Overall (not only in stations that have more than 10 entrances), how many subway station names contain the abbreviation “St”? How many end with “St”?
+Calculating the number of stations with names containing "St" and ending in "St": 
 
 ```{r subway stations containing St}
 
@@ -62,7 +61,6 @@ nyc_subway_contains_st<-nyc_subway %>% filter(str_detect(station_name, "St"))
 ```
 
 There are `r length(unique(nyc_subway_contains_st$station_name))` subway stations containing "St" in their name. 
-
 
 ```{r subway statins ending in St}
 nyc_subway_ends_St<-nyc_subway_contains_st %>% 
@@ -90,12 +88,12 @@ Tidying dataset to include variables for season, episode, viewers, and a unique 
 ```{r tidying GoT chart}
 
 GoT_ratings <- ratings_xml %>% select(-c(Average, Season)) %>% 
-  rename(Season = Season.1) %>%
-  gather(key = Episode, value = Num_viewers, Ep..1: Ep..10) %>%
-  separate(Episode, c("remove", "Episode"), "\\..") %>% 
+  rename(season = Season.1) %>%
+  gather(key = episode, value = num_viewers, Ep..1: Ep..10) %>%
+  separate(episode, c("remove", "episode"), "\\..") %>% 
   select(-remove) %>%
-  filter(Num_viewers != "N/A") %>%
-  mutate(episode_id = paste("S",substr(Season, 1,1), "_","E",substr(Episode, 1, 2)), Num_viewers = as.numeric(Num_viewers)) 
+  filter(num_viewers != "N/A") %>%
+  mutate(episode_id = paste("S",substr(season, 1,1), "_","E",substr(episode, 1, 2)), num_viewers = as.numeric(num_viewers)) 
 
 ```
 
@@ -105,8 +103,8 @@ Making a plot that shows the number of viewers for each episode of each season.
 
 ```{r number of viewers for each episode of each season}
 GoT_ratings %>% 
-  mutate(episode_id = fct_reorder(episode_id, Num_viewers)) %>%
-  ggplot(aes(x = episode_id, y = Num_viewers)) +
+  mutate(episode_id = fct_reorder(episode_id, num_viewers)) %>%
+  ggplot(aes(x = episode_id, y = num_viewers)) +
   geom_bar(stat = "identity") +
   labs(
     title = "Number of viewers for each Game of Thrones episode",
@@ -114,14 +112,15 @@ GoT_ratings %>%
     y = "Number of viewers (millions)") + 
   theme(legend.position = "bottom") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+
 ```
 
 
-Making a boxplot of the number of viewers for each episode of each season.
+Making a boxplot of the number of viewers for each episode (across all 7 seasons).
 ```{r boxplot of number of viewers}
 GoT_ratings %>%
-  mutate(Episode = fct_reorder(Episode, Num_viewers)) %>%
-  ggplot(aes(x = Episode, y = Num_viewers)) +
+  mutate(episode = fct_reorder(episode, num_viewers)) %>%
+  ggplot(aes(x = episode, y = num_viewers)) +
   geom_boxplot() +
   labs(
     title = "Distribution of number of viewers for each Game of Thrones episode across seasons",
@@ -138,8 +137,8 @@ Fitting a linear model that treats number of viewers in each episode as a respon
 
 ```{r linear model}
 GoT_ratings %>% 
-  mutate(Season = as.factor(Season), Season = fct_relevel(Season, "4")) %>%
-  lm(Num_viewers ~ Season, data = .) %>%
+  mutate(season = as.factor(season), season = fct_relevel(season, "4")) %>%
+  lm(num_viewers ~ season, data = .) %>%
   broom::tidy() %>% 
   select(-std.error, -statistic) %>% 
   knitr::kable(digits = 3)
@@ -149,7 +148,7 @@ GoT_ratings %>%
 This linear model suggests that for seasons 1, 2, and 3, season had a negative relationship with number of viewers, whereas for seasons 5, 6, and 7, season had a positive relationship with number of viewers (when season 4 was used as the reference group). Season 7 has the largest estimated beta value. 
 
 
-#Problem 3--scraping Napolean Dyanmite reviews from Amazon and performing a sentiment analysis:
+#Problem 3--sentiment analysis of Napolean Dynamite reviews: 
 
 ```{r scraping Amazon Napolean Dynamite reviews}
 
@@ -181,7 +180,6 @@ dynamite_reviews <- map(urls, ~read_page_reviews(.x)) %>%
   bind_rows
 ```
 
-
 The dataset created by this procedure contains 3 variables: title, stars, and text. Title stores the initial text that accompanies the star rating, stars stores information about how many stars the reviewer gave, and text stores the additional comments found below the star rating on the Amazon website. However, the titles are non-unique; for example, multiple reviewers titled their reviews "Five Stars". This will likely cause issues when we try to analyze the dataset, so another variable with the unique review number should be added:
 
 ```{r}
@@ -204,11 +202,24 @@ ratings_tidy_text <- anti_join(ratings_tidy_text, stop_words)
 
 What words are most frequently used in five-star reviews? In 1-star reviews?
 ```{r most common words used in 5-star vs 1-star reviews}
-words_5_stars<-ratings_tidy_text %>% filter(stars == "5") 
-words_5_stars<-table(words_5_stars$word) %>% data.frame() %>% arrange(desc(Freq)) %>% rename(words = Var1) %>% top_n(., 5)
 
-words_1_star<-ratings_tidy_text %>% filter(stars == "1") 
-words_1_star<-table(words_1_star$word) %>% data.frame() %>% arrange(desc(Freq)) %>% rename(words = Var1) %>% top_n(., 5)
+words_5_stars<-ratings_tidy_text %>% 
+  filter(stars == "5") %>% 
+  pull(word) %>% 
+  table() %>% 
+  data.frame() %>% 
+  arrange(desc(Freq)) %>% 
+  rename(words = ".") %>% 
+  top_n(., 5)
+
+words_1_star<-ratings_tidy_text %>% 
+  filter(stars == "1") %>% 
+  pull(word) %>% 
+  table() %>% 
+  data.frame() %>% 
+  arrange(desc(Freq)) %>% 
+  rename(words = ".") %>% 
+  top_n(., 5)
 
 
 
@@ -250,14 +261,13 @@ ratings_word_ratios %>%
   ylab("log odds ratio (One/Five)") +
   scale_fill_discrete(name = "") +
   labs(
-    title = "Plot of 10 words with more extreme log odds comparing 1-star to 5-star reviews"
+    title = "Plot of 10 words with most extreme log odds comparing 1-star to 5-star reviews"
   )
 
 ```
 
 
-Conduct a sentiment analysis of the review texts; make a plot of your results and include the star rating in your graphic. What is the most positive review? The most negative review?
-
+Conducting a sentiment analysis of ratings by star ratings
 ```{r sentiment analysis}
 bing_sentiments <- get_sentiments("bing")
 
@@ -296,7 +306,6 @@ most_neg_review <- ratings_sentiments %>% filter(sentiment == min(sentiment))
 
 ```
 
+The most positive review(s) was review number `r most_positive_review$review_num`, with a sentiment score of `r most_positive_review$sentiment`. 
 
-The most positive review was review number `r most_positive_review$review_num`, with a sentiment score of `r most_positive_review$sentiment`. 
-
-The most negative review was review number `r most_neg_review$review_num`, with a sentiment score of `r most_neg_review$sentiment`. 
+The most negative review(s) was review number `r most_neg_review$review_num`, with a sentiment score of `r most_neg_review$sentiment`. 
